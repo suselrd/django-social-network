@@ -51,7 +51,8 @@ def configure_notifications(**kwargs):
         defaults={
             'allows_context': False,
             'allows_freq_config': False,
-            'delete_sent': False
+            'delete_sent': False,
+            'allows_subscription': False
         }
     )
     category, created = EventTypeCategory.objects.get_or_create(

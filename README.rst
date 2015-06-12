@@ -9,6 +9,12 @@ Allows to create a basic social network including friendship and social group dy
 Changelog
 =========
 
+0.2.5
+-----
+
+- Fixed error in group transport settings.
+
+
 0.2.4
 -----
 
