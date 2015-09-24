@@ -9,6 +9,11 @@ Allows to create a basic social network including friendship and social group dy
 Changelog
 =========
 
+0.2.6
+-----
+
+- Fix toggle interaction success implementation.
+
 0.2.5
 -----
 
