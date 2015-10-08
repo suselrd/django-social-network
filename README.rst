@@ -9,10 +9,15 @@ Allows to create a basic social network including friendship and social group dy
 Changelog
 =========
 
-0.2.6
+0.2.7
 -----
 
 - Fixed error in group request accepting/denying authorization logic.
+
+0.2.6
+-----
+
+- Fix toggle interaction success implementation.
 
 0.2.5
 -----
