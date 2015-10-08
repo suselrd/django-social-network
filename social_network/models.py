@@ -8,9 +8,9 @@ from django.db.models.signals import post_save, m2m_changed
 from django.db.models import permalink
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
-from notifications.models import Event, NotificationTemplateConfig
 from social_graph import Graph
-from .signals import (
+from notifications.models import Event, NotificationTemplateConfig
+from signals import (
     social_group_member_added,
     social_group_created,
     friend_request_created,
@@ -18,8 +18,16 @@ from .signals import (
     social_group_photo_created,
     social_group_comment_created,
     feed_comment_created,
-    social_group_shared_link_created)
-from .utils import integrated_by_edge, member_of_edge, generate_sha1, group_comment_event_type, group_photo_event_type, group_shared_link_event_type
+    social_group_shared_link_created
+)
+from utils import (
+    integrated_by_edge,
+    member_of_edge,
+    generate_sha1,
+    group_comment_event_type,
+    group_photo_event_type,
+    group_shared_link_event_type
+)
 
 User = get_user_model()
 graph = Graph()
@@ -31,9 +39,6 @@ class FriendRequest(models.Model):
     message = models.TextField(null=True, blank=True, verbose_name=_(u'Message'))
     accepted = models.BooleanField(default=False, verbose_name=_(u'Accepted'))
     denied = models.BooleanField(default=False, verbose_name=_(u'Denied'))
-
-    class Meta:
-        app_label = 'social_network'
 
     def __unicode__(self):
         return self.to_user.get_full_name() or self.to_user.get_username()
@@ -96,18 +101,15 @@ class SocialGroup(models.Model):
     site = models.ForeignKey(Site)
 
     def images_upload(self, filename):
-        salt, hash = generate_sha1(self.id)
-        return 'site-%s/groups/%s/%s/%s/%s' % (
-            self.site, '%s_%s' % (self._meta.app_label, self._meta.object_name.lower()), self.creator.pk, hash,
+        salt, hash_string = generate_sha1(self.pk)
+        return 'site-%s/groups/%s/%s/%s' % (
+            self.site.pk, self.creator.pk, hash_string,
             filename)
 
     image = models.ImageField(verbose_name=_(u'Image'), upload_to=images_upload, null=True, blank=True, max_length=500)
 
     objects = SocialGroupManager()
     on_site = SocialGroupCurrentSiteManager()
-
-    class Meta:
-        app_label = 'social_network'
 
     def __init__(self, *args, **kwargs):
         super(SocialGroup, self).__init__(*args, **kwargs)
@@ -222,11 +224,8 @@ class GroupMembershipRequest(models.Model):
         User, related_name='accepted_group_memberships', verbose_name=_(u'Decider'), null=True, blank=True
     )
 
-    class Meta:
-        app_label = 'social_network'
-
     def accept(self, by_user):
-        if not by_user.is_admin_of(self.group) or self.denied or self.accepted:
+        if not self.group.has_admin(by_user) or self.denied or self.accepted:
             return False
         if self.group.add_member(self.requester, by_user):
             self.accepted = True
@@ -237,7 +236,7 @@ class GroupMembershipRequest(models.Model):
             return False
 
     def deny(self, by_user):
-        if not by_user.is_admin_of(self.group) or self.accepted or self.denied:
+        if not self.group.has_admin(by_user) or self.accepted or self.denied:
             return False
         self.denied = True
         self.acceptor = by_user
@@ -261,14 +260,12 @@ class GroupPost(models.Model):
     group = models.ForeignKey(SocialGroup, related_name='(app_label)s_%(class)s_set_post')
     comment = models.TextField()
 
-    class Meta:
+    class Meta(object):
         abstract = True
 
 
 class GroupComment(GroupPost):
-
-    class Meta:
-        app_label = 'social_network'
+    pass
 
 
 @receiver(post_save, sender=GroupComment, dispatch_uid='post_save_group_comment')
@@ -286,9 +283,6 @@ def social_network_group_comment(instance, user, **kwargs):
 class GroupSharedLink(GroupPost):
     url = models.URLField()
 
-    class Meta:
-        app_label = 'social_network'
-
 
 @receiver(post_save, sender=GroupSharedLink, dispatch_uid='post_save_group_shared_link')
 def post_save_group_shared_link(sender, instance, created, **kwargs):
@@ -304,15 +298,13 @@ def social_network_group_shared_link(instance, user, **kwargs):
 
 class GroupImage(GroupPost):
     def images_upload(self, filename):
-        salt, hash = generate_sha1(self.id)
-        return 'site-%s/groups_images/%s/%s/%s/%s' % (
-            settings.SITE_ID, '%s_%s' % (self._meta.app_label, self._meta.object_name.lower()), self.creator.pk, hash,
+        group_salt, group_hash_string = generate_sha1(self.group.pk)
+        salt, hash_string = generate_sha1(self.pk)
+        return 'site-%s/groups/%s/%s/%s/%s/%s' % (
+            self.group.site.pk, self.group.creator.pk, group_hash_string, self.creator.pk, hash_string,
             filename)
 
     image = models.ImageField(verbose_name=_(u'Image'), upload_to=images_upload, null=True, blank=True, max_length=500)
-
-    class Meta:
-        app_label = 'social_network'
 
 
 @receiver(post_save, sender=GroupImage, dispatch_uid='post_save_group_image')
@@ -337,9 +329,6 @@ class GroupFeedItem(models.Model):
     objects = models.Manager()
     on_site = CurrentSiteManager()
 
-    class Meta:
-        app_label = 'social_network'
-
     def __init__(self, *args, **kwargs):
         super(GroupFeedItem, self).__init__(*args, **kwargs)
         if not self.pk and not self.site_id:
@@ -350,9 +339,6 @@ class FeedComment(models.Model):
     creator = models.ForeignKey(User, related_name='feed_comments')
     receiver = models.ForeignKey(User, related_name='feed_received_comments')
     comment = models.TextField()
-
-    class Meta:
-        app_label = 'social_network'
 
 
 @receiver(post_save, sender=FeedComment, dispatch_uid='post_save_feed_comment')
