@@ -2,7 +2,7 @@
 {% load static %}
 {% load widget_tweaks %}
 
-<form id="modal_comment_form" action="{% url 'profile_comment_create' receiver=receiver %}" method="post" >
+<form id="modal_comment_form" action="{{ request.path }}" method="post" >
     {% csrf_token %}
     {% render_field form.creator %}
     {% render_field form.receiver %}

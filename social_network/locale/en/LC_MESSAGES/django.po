@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-22 17:54-0600\n"
+"POT-Creation-Date: 2016-01-15 14:28-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,99 +17,163 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: __init__.py:29
+#: __init__.py:26
 msgid "Your request has been successfully processed."
 msgstr ""
 
-#: __init__.py:30
+#: __init__.py:27
 msgid "An error has occurred while processing your request'."
 msgstr ""
 
-#: models.py:29 models.py:216
-msgid "Requester"
+#: models.py:31 models.py:297
+msgid "requester"
 msgstr ""
 
-#: models.py:30
-msgid "Receiver"
+#: models.py:32 models.py:404
+msgid "receiver"
 msgstr ""
 
-#: models.py:31 models.py:218
-msgid "Message"
+#: models.py:33 models.py:299
+msgid "message"
 msgstr ""
 
-#: models.py:32 models.py:219
-msgid "Accepted"
+#: models.py:34 models.py:300
+msgid "accepted"
 msgstr ""
 
-#: models.py:33 models.py:220
-msgid "Denied"
+#: models.py:35 models.py:301
+msgid "denied"
 msgstr ""
 
-#: models.py:88 templatetags/social_network_tags.py:126
-msgid "Creator"
+#: models.py:38
+msgid "friend request"
 msgstr ""
 
-#: models.py:89 templates/social_network/group/form.html:25
-msgid "Name"
+#: models.py:39
+msgid "friend requests"
 msgstr ""
 
-#: models.py:90 templates/social_network/group/form.html:35
-msgid "Description"
+#: models.py:91 models.py:350 models.py:403
+msgid "creator"
 msgstr ""
 
-#: models.py:91
-msgid "Closed"
+#: models.py:92
+msgid "name"
 msgstr ""
 
-#: models.py:93 templates/social_network/group/form.html:42
-msgid "Administrators"
+#: models.py:93
+msgid "slug"
 msgstr ""
 
-#: models.py:104 models.py:293
-msgid "Image"
+#: models.py:94
+msgid "description"
 msgstr ""
 
-#: models.py:217
-msgid "Group"
+#: models.py:95
+msgid "closed"
 msgstr ""
 
-#: models.py:222
-msgid "Decider"
+#: models.py:97
+msgid "administrators"
 msgstr ""
 
-#: models.py:283
-msgid "A comment has been posted in a group"
+#: models.py:99
+msgid "creation date"
+msgstr ""
+
+#: models.py:101
+msgid "site"
+msgstr ""
+
+#: models.py:109
+msgid "image"
+msgstr ""
+
+#: models.py:116
+msgid "social group"
+msgstr ""
+
+#: models.py:117
+msgid "social groups"
+msgstr ""
+
+#: models.py:298 models.py:351
+msgid "group"
+msgstr ""
+
+#: models.py:303
+msgid "decider"
+msgstr ""
+
+#: models.py:307
+msgid "group membership request"
 msgstr ""
 
 #: models.py:308
-msgid "A photo has been posted in a group"
+msgid "group membership requests"
 msgstr ""
 
-#: utils.py:133
+#: models.py:352 models.py:405
+msgid "comment"
+msgstr ""
+
+#: models.py:353
+msgid "url"
+msgstr ""
+
+#: models.py:362
+msgid "cover image"
+msgstr ""
+
+#: models.py:365
+msgid "group post"
+msgstr ""
+
+#: models.py:366
+msgid "group posts"
+msgstr ""
+
+#: models.py:378
+msgid "A new post has been added to a group"
+msgstr ""
+
+#: models.py:392 models.py:393
+msgid "group feed item"
+msgstr ""
+
+#: models.py:408
+msgid "profile comment"
+msgstr ""
+
+#: models.py:409
+msgid "profile comments"
+msgstr ""
+
+#: utils.py:120
 #, python-format
 msgid "%(value)dK"
 msgstr ""
 
-#: utils.py:134
+#: utils.py:121
 #, python-format
 msgid "%(value)dM"
 msgstr ""
 
-#: utils.py:135
+#: utils.py:122
 #, python-format
 msgid "%(value)dG"
 msgstr ""
 
-#: views.py:219
-msgid "Solicitud Enviada"
-msgstr ""
-
-#: views.py:418
+#: views.py:153
 msgid "Follow"
 msgstr ""
 
-#: views.py:422
+#: views.py:157
 msgid "Stop Following"
+msgstr ""
+
+#: views.py:336
+msgid "Request Sent"
 msgstr ""
 
 #: templates/social_network/buttons/_friendship_buttons.html:5
@@ -145,6 +209,22 @@ msgstr ""
 msgid "Join"
 msgstr ""
 
+#: templates/social_network/friend/list.html:11
+msgid "Friendship Requests"
+msgstr ""
+
+#: templates/social_network/friend/list.html:23
+#: templates/social_network/friend/list.html:70
+#: templates/social_network/group/list.html:69
+#: templates/social_network/group/detail/members.html:12
+#: templates/social_network/group/detail/requests.html:16
+msgid "Profile Picture"
+msgstr ""
+
+#: templates/social_network/friend/list.html:60
+msgid "Friends"
+msgstr ""
+
 #: templates/social_network/friend/request.html:13
 msgid "Request Friendship"
 msgstr ""
@@ -157,6 +237,7 @@ msgstr ""
 #: templates/social_network/friend/request.html:24
 #: templates/social_network/group/comment.html:24
 #: templates/social_network/group/form.html:82
+#: templates/social_network/group/link.html:29
 #: templates/social_network/group/photo.html:43
 #: templates/social_network/group/request.html:24
 #: templates/social_network/userfeed/comment.html:24
@@ -165,26 +246,11 @@ msgstr ""
 
 #: templates/social_network/friend/request.html:26
 #: templates/social_network/group/comment.html:26
+#: templates/social_network/group/link.html:31
 #: templates/social_network/group/photo.html:45
 #: templates/social_network/group/request.html:26
 #: templates/social_network/userfeed/comment.html:26
 msgid "Send"
-msgstr ""
-
-#: templates/social_network/friend/list/main.html:11
-msgid "Friendship Requests"
-msgstr ""
-
-#: templates/social_network/friend/list/main.html:23
-#: templates/social_network/friend/list/main.html:70
-#: templates/social_network/group/detail/members.html:12
-#: templates/social_network/group/detail/requests.html:16
-#: templates/social_network/group/list/main.html:69
-msgid "Profile Picture"
-msgstr ""
-
-#: templates/social_network/friend/list/main.html:60
-msgid "Friends"
 msgstr ""
 
 #: templates/social_network/group/comment.html:13
@@ -193,11 +259,16 @@ msgid "Comment"
 msgstr ""
 
 #: templates/social_network/group/comment.html:17
+#: templates/social_network/group/link.html:22
 msgid "Write your comment here..."
 msgstr ""
 
 #: templates/social_network/group/form.html:11
 msgid "Create Group"
+msgstr ""
+
+#: templates/social_network/group/form.html:25
+msgid "Name"
 msgstr ""
 
 #: templates/social_network/group/form.html:26
@@ -208,12 +279,20 @@ msgstr ""
 msgid "Enter group description and details..."
 msgstr ""
 
+#: templates/social_network/group/form.html:35
+msgid "Description"
+msgstr ""
+
 #: templates/social_network/group/form.html:41
 msgid "Add group administrators (other than you)..."
 msgstr ""
 
+#: templates/social_network/group/form.html:42
+msgid "Administrators"
+msgstr ""
+
 #: templates/social_network/group/form.html:50
-#: templates/social_network/group/list/main.html:31
+#: templates/social_network/group/list.html:31
 msgid "Group Picture"
 msgstr ""
 
@@ -240,6 +319,48 @@ msgstr ""
 msgid "Create"
 msgstr ""
 
+#: templates/social_network/group/link.html:13
+msgid "Share Link"
+msgstr ""
+
+#: templates/social_network/group/link.html:17
+msgid "Write your link here..."
+msgstr ""
+
+#: templates/social_network/group/list.html:10
+msgid "New Group"
+msgstr ""
+
+#: templates/social_network/group/list.html:20
+msgid "Groups"
+msgstr ""
+
+#: templates/social_network/group/list.html:54
+#, python-format
+msgid ""
+"\n"
+"                                        Members (displaying 6 of "
+"%(members_count)s)\n"
+"                                    "
+msgstr ""
+
+#: templates/social_network/group/list.html:60
+#, python-format
+msgid ""
+"\n"
+"                                        Members (displaying "
+"%(members_count)s of %(members_count)s)\n"
+"                                    "
+msgstr ""
+
+#: templates/social_network/group/list.html:91
+msgid "See more details..."
+msgstr ""
+
+#: templates/social_network/group/list.html:99
+msgid "There are no group to show..."
+msgstr ""
+
 #: templates/social_network/group/members_widget.html:4
 msgid "Group Members"
 msgstr ""
@@ -255,6 +376,10 @@ msgstr ""
 #: templates/social_network/group/photo.html:36
 #: templates/social_network/group/request.html:17
 msgid "Write your comment..."
+msgstr ""
+
+#: templates/social_network/group/detail/post.html:2
+msgid "Place your content here..."
 msgstr ""
 
 #: templates/social_network/group/detail/main.html:15
@@ -277,44 +402,14 @@ msgstr ""
 msgid "There are no membership requests."
 msgstr ""
 
-#: templates/social_network/group/list/main.html:10
-msgid "New Group"
+#: templatetags/social_network_tags.py:129
+msgid "Creator"
 msgstr ""
 
-#: templates/social_network/group/list/main.html:20
-msgid "Groups"
-msgstr ""
-
-#: templates/social_network/group/list/main.html:54
-#, python-format
-msgid ""
-"\n"
-"                                        Members (displaying 6 of "
-"%(members_count)s)\n"
-"                                    "
-msgstr ""
-
-#: templates/social_network/group/list/main.html:60
-#, python-format
-msgid ""
-"\n"
-"                                        Members (displaying "
-"%(members_count)s of %(members_count)s)\n"
-"                                    "
-msgstr ""
-
-#: templates/social_network/group/list/main.html:91
-msgid "See more details..."
-msgstr ""
-
-#: templates/social_network/group/list/main.html:99
-msgid "There are no group to show..."
-msgstr ""
-
-#: templatetags/social_network_tags.py:127
+#: templatetags/social_network_tags.py:130
 msgid "Administrator"
 msgstr ""
 
-#: templatetags/social_network_tags.py:128
+#: templatetags/social_network_tags.py:131
 msgid "Member"
 msgstr ""

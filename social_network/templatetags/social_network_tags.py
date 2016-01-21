@@ -1,19 +1,44 @@
 # coding=utf-8
 from django import template
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as BaseUser
 from django.utils.translation import ugettext as _
-from ..models import FriendRequest, SocialGroup, GroupMembershipRequest
+from ..models import User, FriendRequest, SocialGroup, GroupMembershipRequest
+from ..utils import intmin as intmin_function
 
 register = template.Library()
 
-#--------------------------------------FOLLOWER TAGS---------------------------------------------
+
+@register.filter(is_safe=False)
+def intmin(value):
+    """
+    """
+    return intmin_function(value)
+
+
+def process_user_param(user):
+    if not user or (isinstance(user, BaseUser) and user.is_anonymous()):
+        return False
+    if isinstance(user, User):
+        return user
+    elif isinstance(user, BaseUser):
+        return User.objects.get(pk=user.pk)
+    else:
+        try:
+            return User.objects.get(username=user)
+        except:
+            return False
+
+# --------------------------------------FOLLOWER TAGS---------------------------------------------
+
 
 @register.filter
 def followed_by(user1, user2):
     """
     Returns whether user1 is followed by user2 or not.
     """
-    if not user1 or not user2 or user1.is_anonymous() or user2.is_anonymous():
+    user1 = process_user_param(user1)
+    user2 = process_user_param(user2)
+    if not user1 or not user2:
         return False
     return user1.followed_by(user2)
 
@@ -27,9 +52,12 @@ def is_follower_of(user1, user2):
     :param user2: An User instance.
 
     """
-    if not user1 or not user2 or user1.is_anonymous() or user2.is_anonymous():
+    user1 = process_user_param(user1)
+    user2 = process_user_param(user2)
+    if not user1 or not user2:
         return False
     return user2.followed_by(user1)
+
 
 @register.filter
 def followers_count(user):
@@ -37,9 +65,11 @@ def followers_count(user):
     Returns user followers count
     :param user: An User instance
     """
-    if not user or user.is_anonymous():
+    user = process_user_param(user)
+    if not user:
         return 0
     return user.followers()
+
 
 @register.filter
 def followed_count(user):
@@ -47,23 +77,12 @@ def followed_count(user):
     Returns the count of how many users is the user following
     :param user: An User instance
     """
-    if not user or user.is_anonymous():
+    user = process_user_param(user)
+    if not user:
         return 0
     return user.following()
 
-#--------------------------------------FRIENDSHIP TAGS-------------------------------------------
-
-
-def process_user_param(user):
-    if not user:
-        return False
-    if isinstance(user, User):
-        return user
-    else:
-        try:
-            return User.objects.get(pk=int(user))
-        except:
-            return False
+# --------------------------------------FRIENDSHIP TAGS-------------------------------------------
 
 
 @register.filter
@@ -75,7 +94,9 @@ def is_friends_with(user1, user2):
     :param user2: An User instance.
 
     """
-    if not user1 or not user2 or user1.is_anonymous() or user2.is_anonymous():
+    user1 = process_user_param(user1)
+    user2 = process_user_param(user2)
+    if not user1 or not user2:
         return False
     return user1.friend_of(user2)
 
@@ -89,7 +110,9 @@ def has_requested_friendship_to(user1, user2):
     :param user2: An User instance.
 
     """
-    if not user1 or not user2 or user1.is_anonymous() or user2.is_anonymous() or user1 == user2:
+    user1 = process_user_param(user1)
+    user2 = process_user_param(user2)
+    if not user1 or not user2 or user1 == user2:
         return False
     return FriendRequest.objects.filter(from_user=user1, to_user=user2, accepted=False).exists()
 
@@ -107,7 +130,7 @@ def friends_count(user):
         return 0
     return user_obj.friends()
 
-#--------------------------------------GROUPS TAGS-------------------------------------------
+# --------------------------------------GROUPS TAGS-------------------------------------------
 
 
 def process_group_param(group):
@@ -117,7 +140,7 @@ def process_group_param(group):
         return group
     else:
         try:
-            return SocialGroup.objects.get(pk=int(group))
+            return SocialGroup.objects.get(slug=group)
         except:
             return False
 
@@ -214,9 +237,9 @@ def has_requested_membership(user, group):
     ).exists()
 
 
-@register.simple_tag(takes_context=True)
-def render_user_rol(context, user):
-    return role_dict[context['roles'][user.pk]]
+@register.simple_tag()
+def render_user_rol(user, group):
+    return role_dict[group.member_role_list[user.pk]]
 
 
 @register.filter

@@ -37,7 +37,7 @@
                                 </p>
                                 <div class="pull-right">
                                     {% if req.to_user == request.user %}
-                                        <a href="{% url 'friend_request_accept' pk=req.pk %}"
+                                        <a href="{{ req.get_accept_url }}"
                                            class="text-faded accept_request_link" data-toggle="tooltip"
                                            data-original-title="Accept Friend Request" data-placement="bottom"><i
                                                 class="fa fa-2x fa-check"></i></a>
@@ -54,6 +54,7 @@
         </div>
     </div>
     <!--FRIENDS-->
+    {% with friends=user.friend_list %}
     <div class="widget widget-body-white widget-heading-simple" {% if friends|length > 0 %}data-toggle="collapse-widget"
          data-collapse-closed="false"{% endif %}>
         <div class="widget-head">
@@ -91,6 +92,7 @@
             </ul>
         </div>
     </div>
+    {% endwith %}
 </div>
 <!--for collapsible-->
 <script src="{% static "vendors/components/modules/admin/widgets/widget-collapsible/assets/widget-collapsible.init.js" %}"></script>

@@ -2,7 +2,7 @@
 {% load static %}
 {% load widget_tweaks %}
 
-<form id="modal_group_photo_form" action="{% url 'social_group_photo_create' group=group %}" method="post" >
+<form id="modal_group_photo_form" action="{{ request.path }}" method="post" >
     {% csrf_token %}
     {% render_field form.creator %}
     {% render_field form.group %}

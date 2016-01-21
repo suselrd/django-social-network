@@ -2,7 +2,7 @@
 {% load static %}
 {% load widget_tweaks %}
 
-<form id="group_request_form" action="{% url 'social_group_request_create_ajax' group=group %}" method="post" >
+<form id="group_request_form" action="{{ request.path }}" method="post" >
     {% csrf_token %}
     {% render_field form.requester %}
     {% render_field form.group %}

@@ -3,15 +3,6 @@
 {% load social_network_tags %}
 
 <div class="separator"></div>
-{% if user.pk == owner %}
-    <div class="innerLR">
-        <a href="{% url 'social_group_create' %}"
-           class="pull-right text-primary show_modal"
-           data-container="#modal_add_social_group">{% trans 'New Group' %}
-        </a>
-    </div>
-{% endif %}
-<div class="clearfix"></div>
 <!-- MY GROUPS-->
 <div class="widget widget-body-white widget-heading-simple"
      {% if object_list|length > 0 %}data-toggle="collapse-widget" data-collapse-closed="false"{% endif %}>
@@ -26,7 +17,7 @@
                 <span class="pull-right glyphicons {% if group.closed %}lock{% else %}unlock{% endif %} group-lock"><i></i></span>
                 <div class="col-md-1 ">
                     <div class="widget widget-pinterest border-none">
-                        <a href="{% url 'social_group_details' pk=group.pk %}" data-toggle="modal"
+                        <a href="{{ group.get_absolute_url }}" data-toggle="modal"
                            class="widget-body padding-none">
                             {% trans 'Group Picture' as group_picture_alt %}
                             {% if group.image %}
@@ -39,8 +30,8 @@
                 </div>
                 <div class="col-md-11">
                     <h4 class="border-bottom">
-                        <a href="{% url 'social_group_details' pk=group.pk %}">{{ group.name }}</a>
-                         [{{ group|relationship_with:owner }} ]
+                        <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+                         [{{ group|relationship_with:username }} ]
                     </h4>
                     <p>{{ group.description }}</p>
                 </div>
@@ -88,7 +79,7 @@
                 {% endwith %}
                 <div class="col-md-12 innerB">
                     <div class="pull-right"><a
-                            href="{% url 'social_group_details' pk=group.pk %}">{% trans 'See more details...' %}</a>
+                            href="{{ group.get_absolute_url }}">{% trans 'See more details...' %}</a>
                     </div>
                     <div class="clearfix"></div>
                 </div>

@@ -1,32 +1,43 @@
 # coding=utf-8
 from django import forms
 from django.core.exceptions import ValidationError
-from . import Manager
 from models import (
+    User,
     FriendRequest, 
     SocialGroup, 
-    GroupComment, 
+    GroupPost,
     GroupMembershipRequest, 
-    GroupImage, 
     FeedComment,
-    GroupSharedLink)
+)
 
 
 class FriendRequestForm(forms.ModelForm):
 
     class Meta:
         model = FriendRequest
+        fields = ('from_user', 'to_user', 'message')
         widgets = {
             'from_user': forms.widgets.HiddenInput,
             'to_user': forms.widgets.HiddenInput,
         }
 
 
+class ProfileCommentForm(forms.ModelForm):
+    class Meta:
+        model = FeedComment
+        fields = ('creator', 'receiver', 'comment')
+        widgets = {
+            'creator': forms.widgets.HiddenInput,
+            'receiver': forms.widgets.HiddenInput,
+        }
+
+
 class SocialGroupForm(forms.ModelForm):
-    administrators = forms.ModelMultipleChoiceField(Manager.all(), required=False)
+    administrators = forms.ModelMultipleChoiceField(User.objects.all(), required=False)
 
     class Meta:
         model = SocialGroup
+        fields = ('creator', 'name', 'description', 'closed', 'administrators', 'site', 'image')
         widgets = {
             'creator': forms.widgets.HiddenInput,
             'site': forms.widgets.HiddenInput
@@ -36,6 +47,7 @@ class SocialGroupForm(forms.ModelForm):
 class GroupPostForm(forms.ModelForm):
 
     class Meta(object):
+        model = GroupPost
         widgets = {
             'creator': forms.widgets.HiddenInput,
             'group': forms.widgets.HiddenInput
@@ -50,23 +62,24 @@ class GroupPostForm(forms.ModelForm):
 class GroupCommentForm(GroupPostForm):
 
     class Meta(GroupPostForm.Meta):
-        model = GroupComment
+        fields = ('creator', 'group', 'comment',)
 
 
 class GroupSharedLinkForm(GroupPostForm):
     class Meta(GroupPostForm.Meta):
-        model = GroupSharedLink
+        fields = ('creator', 'group', 'url', 'comment',)
 
 
 class GroupPhotoForm(GroupPostForm):
 
     class Meta(GroupPostForm.Meta):
-        model = GroupImage
+        fields = ('creator', 'group', 'image', 'comment',)
 
 
 class GroupMembershipRequestForm(forms.ModelForm):
     class Meta:
         model = GroupMembershipRequest
+        fields = ('requester', 'group', 'message')
         widgets = {
             'requester': forms.widgets.HiddenInput,
             'group': forms.widgets.HiddenInput
@@ -81,12 +94,3 @@ class GroupMembershipRequestForm(forms.ModelForm):
         ).exists():
             raise ValidationError('Pre-existing group membership request from this user to this group.')
         return self.cleaned_data
-
-
-class FeedCommentForm(forms.ModelForm):
-    class Meta:
-        model = FeedComment
-        widgets = {
-            'creator': forms.widgets.HiddenInput,
-            'receiver': forms.widgets.HiddenInput,
-        }

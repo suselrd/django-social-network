@@ -35,7 +35,7 @@
                             <div class="col-md-1">
                                 {% has_admin group user as is_admin %}
                                 {% if is_admin %}
-                                    <a href="{% url 'social_group_request_accept' pk=req.pk %}"
+                                    <a href="{{ req.get_accept_url }}"
                                        class="text-faded accept_request_link" data-toggle="tooltip"
                                        data-original-title="Accept" data-placement="bottom"><i
                                             class="fa fa-2x fa-check"></i></a>

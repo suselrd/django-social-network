@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="django-social-network",
-    url="http://github.com/dgvicente/django-social-network/",
-    author="Diana Garcia Vicente",
-    author_email="dianagv@gmail.com",
-    version="0.2.6",
+    url="http://github.com/suselrd/django-social-network/",
+    author="Susel Ruiz Duran",
+    author_email="suselrd@gmail.com",
+    version="0.3.0",
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,

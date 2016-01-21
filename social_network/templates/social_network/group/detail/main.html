@@ -22,7 +22,7 @@
                     {% endif %}
                 </div>
                 <div class="col-md-11">
-                    <div id="buttonsContainer" data-url="{% url 'social_group_membership_buttons' group=group.pk %}">
+                    <div id="buttonsContainer" data-url="{{ group.get_membership_buttons_url }}">
                         {% include 'social_network/buttons/_membership_buttons.html' %}
                     </div>
                     <h3><a href="">{{ group.name }}</a></h3>
@@ -56,16 +56,16 @@
         </div>
         <div class="tab-content">
             <div class="tab-pane fade" id="feedTab" data-repeat-request="true"
-                 data-url="{% url "social_group_feed" group=group.pk %}"
+                 data-url="{{ group.get_feed_url }}"
                  data-callback-params="#feedTab">
             </div>
             <div id="membersTab" class="tab-pane fade" data-repeat-request="true"
-                 data-url="{% url 'social_group_members_list' group=group.pk %}"
+                 data-url="{{ group.get_members_url }}"
                  data-callback-params="#membersTab">
             </div>
             {% if is_admin and group.closed %}
                 <div id="membershipRequestsTab" class="tab-pane fade" data-repeat-request="true"
-                     data-url="{% url 'social_group_request_list' group=group.pk %}"
+                     data-url="{{ group.get_requests_url }}"
                      data-callback-params="#membershipRequestsTab">
                 </div>
             {% endif %}
@@ -77,5 +77,5 @@
 </div>
 <!-- // Content END -->
 
-{% include  'social_network/interactions/_modal_interactions.html' %}
+<div id="modal_group_request_create" class="modal fade"></div>
 <script src="{% static 'social_network/js/group_details.js' %}"></script>

@@ -1,6 +1,6 @@
 # coding=utf-8
 from notifications.transports import BaseTransport
-from .models import GroupFeedItem, SocialGroup
+from models import GroupFeedItem, SocialGroup
 
 
 class GroupFeedTransport(BaseTransport):

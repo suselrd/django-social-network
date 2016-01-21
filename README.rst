@@ -1,3 +1,4 @@
+
 =====================
 Django Social Network
 =====================
@@ -8,6 +9,13 @@ Allows to create a basic social network including friendship and social group dy
 
 Changelog
 =========
+
+0.3.0
+-----
+
+- Model Refactoring.
+- Social Middleware.
+
 
 0.2.7
 -----

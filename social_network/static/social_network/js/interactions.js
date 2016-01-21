@@ -42,15 +42,11 @@ var ToggleSocialInteraction = iClazz(SocialInteraction, {
                 e.preventDefault();
 
                 var $this = $(this),
-                    url = $this.attr('href') || $this.data('url'),
-                    pk = $this.data('pk');
+                    url = $this.attr('href') || $this.data('url');
 
-                if (typeof pk !== 'undefined' && typeof url !== 'undefined') {
+                if (typeof url !== 'undefined') {
                     $.ajax(url, {
                         type: 'POST',
-                        data: {
-                            "pk": pk
-                        },
                         context: this,
                         success: function(response, status, xhr) {
                             $class.success(response, status, xhr, this);
@@ -62,7 +58,7 @@ var ToggleSocialInteraction = iClazz(SocialInteraction, {
                     });
 
                 } else {
-                    throw new Error('Error: the values of (url and pk) must be specified.');
+                    throw new Error('Error: the url value must be specified.');
                 }
             });
 

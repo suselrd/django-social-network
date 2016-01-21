@@ -14,7 +14,7 @@
 
         <!-- Modal body -->
         <form id="group_create_form" class="form-horizontal" method="post" data-submit-response="html"
-              action="{% url 'social_group_create' %}" enctype="multipart/form-data">
+              action="{{ request.path }}" enctype="multipart/form-data">
             {% csrf_token %}
             {% render_field form.creator %}
             <div class="modal-body">
