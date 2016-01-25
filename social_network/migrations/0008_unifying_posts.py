@@ -51,17 +51,25 @@ class Migration(DataMigration):
                 }
             )
 
+            post_ctype = orm['contenttypes.ContentType'].objects.get(app_label=orm.GroupPost._meta.app_label, model=orm.GroupPost._meta.model_name)
+
             try:
                 comment_event_type = orm['notifications.EventType'].objects.get(name=comment_event_type)
                 for event in comment_event_type.event_set.all():
-                    comment = event.target_object
+                    ctype = orm['contenttypes.ContentType'].objects.get(
+                        pk=event.target_type.pk
+                    )
+                    comment = orm['%s.%s' % (ctype.app_label, ctype.model)].objects.get(
+                        pk=event.target_pk
+                    )
                     post = orm.GroupPost.objects.create(
                         creator=comment.creator,
                         group=comment.group,
                         comment=comment.comment
                     )
                     event.type = post_event_type
-                    event.target_object = post
+                    event.target_type = post_ctype
+                    event.target_pk = post.pk
                     event.save()
                 orm.GroupFeedItem.objects.filter(
                     template_config__event_type=comment_event_type,
@@ -73,7 +81,12 @@ class Migration(DataMigration):
             try:
                 shared_link_event_type = orm['notifications.EventType'].objects.get(name=shared_link_event_type)
                 for event in shared_link_event_type.event_set.all():
-                    shared_link = event.target_object
+                    ctype = orm['contenttypes.ContentType'].objects.get(
+                        pk=event.target_type.pk
+                    )
+                    shared_link = orm['%s.%s' % (ctype.app_label, ctype.model)].objects.get(
+                        pk=event.target_pk
+                    )
                     post = orm.GroupPost.objects.create(
                         creator=shared_link.creator,
                         group=shared_link.group,
@@ -81,7 +94,8 @@ class Migration(DataMigration):
                         url=shared_link.url
                     )
                     event.type = post_event_type
-                    event.target_object = post
+                    event.target_type = post_ctype
+                    event.target_pk = post.pk
                     event.save()
                 orm.GroupFeedItem.objects.filter(
                     template_config__event_type=shared_link_event_type,
@@ -93,7 +107,12 @@ class Migration(DataMigration):
             try:
                 photo_event_type = orm['notifications.EventType'].objects.get(name=photo_event_type)
                 for event in photo_event_type.event_set.all():
-                    image = event.target_object
+                    ctype = orm['contenttypes.ContentType'].objects.get(
+                        pk=event.target_type.pk
+                    )
+                    image = orm['%s.%s' % (ctype.app_label, ctype.model)].objects.get(
+                        pk=event.target_pk
+                    )
                     post = orm.GroupPost.objects.create(
                         creator=image.creator,
                         group=image.group,
@@ -101,7 +120,8 @@ class Migration(DataMigration):
                         image=image.image
                     )
                     event.type = post_event_type
-                    event.target_object = post
+                    event.target_type = post_ctype
+                    event.target_pk = post.pk
                     event.save()
                 orm.GroupFeedItem.objects.filter(
                     template_config__event_type=photo_event_type,
@@ -131,8 +151,18 @@ class Migration(DataMigration):
 
         try:
             post_event_type = orm['notifications.EventType'].objects.get(name=post_event_type)
+            shared_link_ctype = orm['contenttypes.ContentType'].objects.get(app_label=orm.GroupSharedLink._meta.app_label, model=orm.GroupSharedLink._meta.model_name)
+            photo_ctype = orm['contenttypes.ContentType'].objects.get(app_label=orm.GroupImage._meta.app_label, model=orm.GroupImage._meta.model_name)
+            comment_ctype = orm['contenttypes.ContentType'].objects.get(app_label=orm.GroupComment._meta.app_label, model=orm.GroupComment._meta.model_name)
+
+
             for event in post_event_type.event_set.all():
-                post = event.target_object
+                ctype = orm['contenttypes.ContentType'].objects.get(
+                    pk=event.target_type.pk
+                )
+                post = orm['%s.%s' % (ctype.app_label, ctype.model)].objects.get(
+                    pk=event.target_pk
+                )
                 if post.url:
                     shared_link = orm.GroupSharedLink.objects.create(
                         creator=post.creator,
@@ -141,7 +171,8 @@ class Migration(DataMigration):
                         url=post.url
                     )
                     event.type = shared_link_event_type
-                    event.target_object = shared_link
+                    event.target_type = shared_link_ctype
+                    event.target_pk = shared_link.pk
                 elif post.image:
                     image = orm.GroupImage.objects.create(
                         creator=post.creator,
@@ -150,7 +181,8 @@ class Migration(DataMigration):
                         image=post.image
                     )
                     event.type = photo_event_type
-                    event.target_object = image
+                    event.target_type = photo_ctype
+                    event.target_pk = image.pk
                 else:
                     comment = orm.GroupComment.objects.create(
                         creator=post.creator,
@@ -158,7 +190,8 @@ class Migration(DataMigration):
                         comment=post.comment
                     )
                     event.type = comment_event_type
-                    event.target_object = comment
+                    event.target_type = comment_ctype
+                    event.target_pk = comment.pk
                 event.save()
         except ObjectDoesNotExist:
             pass
