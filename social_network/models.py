@@ -509,9 +509,13 @@ class GroupPost(models.Model):
 
 @receiver(models.signals.post_save, sender=GroupPost, dispatch_uid='post_save_group_post')
 def post_save_group_post(sender, instance, created, **kwargs):
-    if not created:
-        GroupFeedItem.objects.get(event__target_pk=instance.pk).delete()
-    social_group_post_created.send(sender=GroupPost, user=instance.creator, instance=instance)
+    if created:
+        social_group_post_created.send(sender=GroupPost, user=instance.creator, instance=instance)
+    else:
+        import datetime
+        feed_item = GroupFeedItem.objects.get(event__target_pk=instance.pk)
+        feed_item.event.date = datetime.datetime.now()
+        feed_item.event.save()
 
 
 @receiver(models.signals.post_delete, sender=GroupPost, dispatch_uid='post_delete_group_post')
@@ -527,7 +531,37 @@ def social_network_group_post(instance, user, **kwargs):
 
 @receiver(social_group_post_deleted, sender=GroupPost, dispatch_uid='social_network_group_post_deleted')
 def social_network_group_post_deleted(instance, **kwargs):
-    GroupFeedItem.objects.get(event__target_pk=instance.pk).delete()
+    feed_item = GroupFeedItem.objects.get(event__target_pk=instance.pk)
+    feed_item.erased = True
+    feed_item.save()
+
+
+class GroupFeedItemQuerySet(models.query.QuerySet):
+
+    def active(self):
+        return self.filter(erased=False)
+
+
+class GroupFeedItemManagerMixin(object):
+
+    def active(self):
+        return self.get_queryset().active()
+
+
+class GroupFeedItemManager(GroupFeedItemManagerMixin, models.Manager):
+
+    def get_queryset(self):
+        return GroupFeedItemQuerySet(self.model, using=self._db).active()
+
+
+class GroupFeedItemCurrentSiteManager(GroupFeedItemManagerMixin, CurrentSiteManager):
+
+    def get_queryset(self):
+        if not self._CurrentSiteManager__is_validated:
+            self._validate_field_name()
+        return GroupFeedItemQuerySet(
+            self.model, using=self._db
+        ).filter(**{self._CurrentSiteManager__field_name + '__id__exact': Site.objects.get_current().pk}).active()
 
 
 class GroupFeedItem(LikableMixin, DenounceTargetMixin, CommentTargetMixin, ShareToSocialNetworkTargetMixin,
@@ -535,11 +569,13 @@ class GroupFeedItem(LikableMixin, DenounceTargetMixin, CommentTargetMixin, Share
     group = models.ForeignKey(SocialGroup, related_name='feed_items')
     event = models.ForeignKey(Event, related_name='feed_items')
     template_config = models.ForeignKey(NotificationTemplateConfig)
+    erased = models.BooleanField(default=False, blank=True)
 
     site = models.ForeignKey(Site)
 
-    objects = models.Manager()
-    on_site = CurrentSiteManager()
+    objects = GroupFeedItemManager()
+    on_site = GroupFeedItemCurrentSiteManager()
+    historical = models.Manager()
 
     class Meta(object):
         verbose_name = _(u'group feed item')

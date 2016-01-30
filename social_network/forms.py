@@ -65,6 +65,7 @@ class GroupPostForm(forms.ModelForm):
 
 
 class GenericGroupPostForm(GroupPostForm):
+    delete_image = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput)
 
     class Meta(GroupPostForm.Meta):
         fields = ('creator', 'group', 'comment', 'url', 'image')
@@ -76,6 +77,15 @@ class GenericGroupPostForm(GroupPostForm):
         if self.instance and self.instance.url != '':
             if not self.instance.url.startswith('http://') and not self.instance.url.startswith('https://'):
                 self.initial['url'] = 'http://%s%s' % (Site.objects.get_current().domain, self.instance.url)
+
+    def save(self, commit=True):
+        group_post = super(GenericGroupPostForm, self).save(commit)
+
+        if commit and group_post.image and self.cleaned_data['delete_image']:
+            group_post.image = None
+            group_post.save()
+
+        return group_post
 
 
 class GroupCommentForm(GroupPostForm):

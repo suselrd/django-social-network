@@ -10,6 +10,11 @@ Allows to create a basic social network including friendship and social group dy
 Changelog
 =========
 
+0.4.1
+-----
+
+- Added GroupFeedItem field "erased" to mark has erased all deleted instance.
+
 0.4.0
 -----
 
