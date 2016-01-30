@@ -10,7 +10,7 @@
                 {% trans 'Membership request sent to group' %}
             </span>
         {% else %}
-            <a href="{{ group.get_request_membership_url }}" data-container="#modal_group_request_create"
+            <a href="{{ group.get_request_membership_url }}" data-container="#ajax_modal"
                class="btn btn-primary btn-icon glyphicons ok_2 btn-sm pull-right show_modal">
                 <i></i>{% trans 'Request Membership' %}
             </a>

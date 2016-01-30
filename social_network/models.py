@@ -8,6 +8,14 @@ from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
 from social_graph import Graph
 from notifications.models import Event, NotificationTemplateConfig
+from content_interactions.mixins import (
+    LikableMixin,
+    DenounceTargetMixin,
+    CommentTargetMixin,
+    ShareToSocialNetworkTargetMixin
+)
+from content_interactions_stats.mixins import StatsMixin
+from mixins import ShareToSocialGroupTargetMixin
 from signals import (
     follower_relationship_created,
     follower_relationship_destroyed,
@@ -17,6 +25,7 @@ from signals import (
     social_group_membership_request_created,
     social_group_member_added,
     social_group_post_created,
+    social_group_post_deleted,
     profile_comment_created,
 )
 from utils import (
@@ -29,12 +38,10 @@ from utils import (
     group_post_event_type
 )
 
-BaseUser = get_user_model()
-BaseManager = BaseUser._default_manager.__class__
 graph = Graph()
 
 
-class UserManager(BaseManager):
+class SocialNetworkUserManager(object):
 
     def followed_by_users(self, user):
         follower_of = follower_of_edge()
@@ -49,11 +56,11 @@ class UserManager(BaseManager):
         return self.get_queryset().filter(pk__in=ids)
 
 
-class User(BaseUser):
-    objects = UserManager()
+class SocialNetworkUserMixin(models.Model):
+    objects = SocialNetworkUserManager()
 
     class Meta:
-        proxy = True
+        abstract = True
 
     @models.permalink
     def get_request_friendship_url(self):
@@ -131,6 +138,18 @@ class User(BaseUser):
         return group.add_member(self)
 
 
+from django.contrib.auth.models import User, UserManager
+# modify user class
+bases = list(User.__bases__)
+bases.insert(0, SocialNetworkUserMixin)
+User.__bases__ = tuple(bases)
+
+# modify user class
+bases = list(UserManager.__bases__)
+bases.insert(0, SocialNetworkUserManager)
+UserManager.__bases__ = tuple(bases)
+
+
 class FriendRequest(models.Model):
     from_user = models.ForeignKey(User, related_name='user_outgoing_friend_requests', verbose_name=_(u'requester'))
     to_user = models.ForeignKey(User, related_name='user_incoming_friend_requests', verbose_name=_(u'receiver'))
@@ -191,7 +210,8 @@ class SocialGroupCurrentSiteManager(SocialGroupManagerMixin, CurrentSiteManager)
     pass
 
 
-class SocialGroup(models.Model):
+class SocialGroup(models.Model, LikableMixin, DenounceTargetMixin, ShareToSocialNetworkTargetMixin,
+                  ShareToSocialGroupTargetMixin):
     creator = models.ForeignKey(User, related_name='created_groups', verbose_name=_(u'creator'))
     name = models.CharField(_(u'name'), max_length=255)
     slug = models.SlugField(_(u'slug'), max_length=255)
@@ -254,6 +274,10 @@ class SocialGroup(models.Model):
         return 'group:edit_inline', [self.slug]
 
     @models.permalink
+    def get_post_url(self):
+        return 'group:post', [self.slug]
+
+    @models.permalink
     def get_comment_url(self):
         return 'group:comment', [self.slug]
 
@@ -288,6 +312,11 @@ class SocialGroup(models.Model):
     @models.permalink
     def get_request_membership_inline_url(self):
         return 'group:request_membership_inline', [self.slug]
+
+    @property
+    def picture(self):
+        # to satisfy ShareToSocialGroupTargetMixin and ShareToSocialNetworkTargetMixin
+        return self.image
 
     @property
     def members(self):
@@ -453,8 +482,8 @@ def post_save_group_membership_request(sender, instance, created, **kwargs):
 class GroupPost(models.Model):
     creator = models.ForeignKey(User, related_name='posts', verbose_name=_(u'creator'))
     group = models.ForeignKey(SocialGroup, related_name='posts', verbose_name=_(u'group'))
-    comment = models.TextField(_(u'comment'))
-    url = models.URLField(_(u'url'), blank=True)
+    comment = models.TextField(_(u'comment'), help_text=_(u"Share something with the group"))
+    url = models.URLField(_(u'url'), blank=True, help_text=_(u"Enter a link"))
 
     def images_upload(self, filename):
         group_salt, group_hash_string = generate_sha1(self.group.pk)
@@ -469,11 +498,25 @@ class GroupPost(models.Model):
         verbose_name = _(u'group post')
         verbose_name_plural = _(u'group posts')
 
+    @models.permalink
+    def get_edit_url(self):
+        return 'group:edit_post', [], {'slug': self.group.slug, 'pk': self.pk}
+
+    @models.permalink
+    def get_delete_url(self):
+        return 'group:delete_post', [], {'slug': self.group.slug, 'pk': self.pk}
+
 
 @receiver(models.signals.post_save, sender=GroupPost, dispatch_uid='post_save_group_post')
 def post_save_group_post(sender, instance, created, **kwargs):
-    if created:
-        social_group_post_created.send(sender=GroupPost, user=instance.creator, instance=instance)
+    if not created:
+        GroupFeedItem.objects.get(event__target_pk=instance.pk).delete()
+    social_group_post_created.send(sender=GroupPost, user=instance.creator, instance=instance)
+
+
+@receiver(models.signals.post_delete, sender=GroupPost, dispatch_uid='post_delete_group_post')
+def post_delete_group_post(sender, instance, **kwargs):
+    social_group_post_deleted.send(sender=GroupPost, instance=instance)
 
 
 @receiver(social_group_post_created, sender=GroupPost, dispatch_uid='social_network_group_post')
@@ -482,7 +525,13 @@ def social_network_group_post(instance, user, **kwargs):
     create_event(user, group_post_event_type(), instance, _(u'A new post has been added to a group'))
 
 
-class GroupFeedItem(models.Model):
+@receiver(social_group_post_deleted, sender=GroupPost, dispatch_uid='social_network_group_post_deleted')
+def social_network_group_post_deleted(instance, **kwargs):
+    GroupFeedItem.objects.get(event__target_pk=instance.pk).delete()
+
+
+class GroupFeedItem(LikableMixin, DenounceTargetMixin, CommentTargetMixin, ShareToSocialNetworkTargetMixin,
+                    ShareToSocialGroupTargetMixin, StatsMixin, models.Model):
     group = models.ForeignKey(SocialGroup, related_name='feed_items')
     event = models.ForeignKey(Event, related_name='feed_items')
     template_config = models.ForeignKey(NotificationTemplateConfig)
@@ -501,6 +550,25 @@ class GroupFeedItem(models.Model):
         super(GroupFeedItem, self).__init__(*args, **kwargs)
         if not self.pk and not self.site_id:
             self.site_id = self.event.site_id or Site.objects.get_current().pk
+
+    def creator_by(self, user):
+        return isinstance(user, GroupFeedItem) and self.event.user.pk == user.pk
+
+    @property
+    def picture(self):
+        # to satisfy ShareToSocialNetworkTargetMixin and ShareToSocialGroupTargetMixin
+        try:
+            return self.event.target_object.image
+        except Exception:
+            return None
+
+    @property
+    def url(self):
+        # to satisfy ShareToSocialNetworkTargetMixin and ShareToSocialGroupTargetMixin
+        try:
+            return self.event.target_object.url or self.group.get_absolute_url()
+        except Exception:
+            return ""
 
 
 class FeedComment(models.Model):

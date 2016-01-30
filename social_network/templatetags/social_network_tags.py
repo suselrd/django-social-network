@@ -1,11 +1,13 @@
 # coding=utf-8
+from django.conf import settings
 from django import template
-from django.contrib.auth.models import User as BaseUser
+from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
-from ..models import User, FriendRequest, SocialGroup, GroupMembershipRequest
+from ..models import FriendRequest, SocialGroup, GroupMembershipRequest
 from ..utils import intmin as intmin_function
 
 register = template.Library()
+FORMAT_LIST = getattr(settings, 'IMAGES_FORMAT_LIST', ['jpeg', 'jpg', 'png', 'gif'])
 
 
 @register.filter(is_safe=False)
@@ -16,12 +18,10 @@ def intmin(value):
 
 
 def process_user_param(user):
-    if not user or (isinstance(user, BaseUser) and user.is_anonymous()):
+    if not user or (isinstance(user, User) and user.is_anonymous()):
         return False
     if isinstance(user, User):
         return user
-    elif isinstance(user, BaseUser):
-        return User.objects.get(pk=user.pk)
     else:
         try:
             return User.objects.get(username=user)
@@ -251,3 +251,28 @@ def groups_count(user):
     if not user_obj:
         return 0
     return user_obj.social_groups()
+
+
+@register.simple_tag
+def render_url(url):
+    import re
+    youtube_url_regex = re.compile(ur'(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-&=]+)', re.MULTILINE | re.IGNORECASE)
+    youtube_id_regex = re.compile(
+        ur'(?:https?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtube|youtu|youtube-nocookie)\.(?:com|be)\/(?:watch\?v=|watch\?vi=|watch\?.+&v=|watch\?.+&vi=|embed\/|v\/|vi\/|\?v=|\?vi=|.+\?v=|.+\?vi=)?([^&=\n%\?]{11})',
+        re.MULTILINE | re.IGNORECASE
+    )
+
+    default = '<a rel="nofollow" href="{0}" target="_blank">{1}</a>'.format(url, url)
+    try:
+        if youtube_url_regex.match(url):
+            youtube_id = youtube_id_regex.search(url).groups()[0]
+            return '<iframe width="100%" height="315" src="http://www.youtube.com/embed/{0}"></iframe>'.format(youtube_id)
+        else:
+            url_splitted = url.split('.')
+
+            if url_splitted[len(url_splitted) - 1].lower() in FORMAT_LIST:
+                return '<img src="{0}" class="img-responsive" style="width:100%" alt="{1}"/>'.format(url, url)
+
+            return default
+    except Exception:
+        return default

@@ -10,6 +10,14 @@ Allows to create a basic social network including friendship and social group dy
 Changelog
 =========
 
+0.4.0
+-----
+
+- Added functionality to edit/delete GroupPost
+- Added functionality to Share to social networks and Social Groups as django-content-interactions
+- middleware removed
+- Changed User proxy to abstraction
+
 0.3.0
 -----
 

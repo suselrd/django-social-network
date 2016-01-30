@@ -142,6 +142,24 @@ group_patterns = patterns(
     ),
 
     url(
+        r'^(?P<slug>[\w-]+)/post/$',
+        lr(views.GenericGroupPostCreateView.as_view()),
+        name='post'
+    ),
+
+    url(
+        r'^(?P<slug>[\w-]+)/(?P<pk>\d+)/edit/$',
+        lr(views.GenericGroupPostUpdateView.as_view()),
+        name='edit_post'
+    ),
+
+    url(
+        r'^(?P<slug>[\w-]+)/(?P<pk>\d+)/delete/$',
+        lr(views.GroupPostDeleteView.as_view()),
+        name='delete_post'
+    ),
+
+    url(
         r'^(?P<slug>[\w-]+)/comment/$',
         lr(views.BaseGroupCommentCreateView.as_view()),
         name='comment'

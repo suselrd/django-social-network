@@ -1,25 +1,36 @@
 # coding=utf-8
 import json
 import logging
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
+from django.db.transaction import atomic
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseForbidden
+from django.http.response import Http404
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic import CreateView, ListView, View, DetailView, TemplateView, UpdateView
+from django.views.generic import CreateView, ListView, View, DetailView, TemplateView, UpdateView, FormView, DeleteView
 from . import SERVER_SUCCESS_MESSAGE
 from utils import intmin
-from models import User, FriendRequest, SocialGroup, GroupMembershipRequest
+from models import SocialGroup, GroupMembershipRequest, GroupPost
 from forms import (
     FriendRequestForm,
     SocialGroupForm,
+    GenericGroupPostForm,
     GroupCommentForm,
     GroupMembershipRequestForm,
     GroupPhotoForm,
     ProfileCommentForm,
-    GroupSharedLinkForm
+    GroupSharedLinkForm,
+    ShareSocialGroupForm
 )
 
 logger = logging.getLogger(__name__)
+
+
+MODAL_VALIDATION_ERROR_MESSAGE = _(u"A validation error has occurred.")
+MODAL_SHARE_SUCCESS_MESSAGE = _(u"The item has been successfully shared.")
+DELETE_GROUP_POST_SUCCESS_MESSAGE = _(u"The group post has been successfully removed.")
 
 
 class JSONResponseEnabledMixin(object):
@@ -86,6 +97,7 @@ class FriendRequestListView(ListView):
 class AcceptFriendRequestView(JSONResponseEnabledMixin, View):
 
     def post(self, request, *args, **kwargs):
+        from models import FriendRequest
         try:
             result = FriendRequest.objects.get(pk=kwargs['pk']).accept(self.request.user)
             if not result:
@@ -103,6 +115,7 @@ class AcceptFriendRequestView(JSONResponseEnabledMixin, View):
 class DenyFriendRequestView(JSONResponseEnabledMixin, View):
 
     def post(self, request, *args, **kwargs):
+        from models import FriendRequest
         try:
             result = FriendRequest.objects.get(pk=kwargs['pk']).deny(self.request.user)
             if not result:
@@ -315,7 +328,11 @@ class SocialGroupRequestAcceptView(JSONResponseEnabledMixin, View):
                 'successMsg': force_text(SERVER_SUCCESS_MESSAGE)
             })
         except GroupMembershipRequest.DoesNotExist:
-            return HttpResponseBadRequest()
+            raise Http404(
+                _("No %(verbose_name)s found matching the query") % {
+                    'verbose_name': GroupMembershipRequest._meta.verbose_name
+                }
+            )
         except Exception:
             return HttpResponseServerError()
 
@@ -373,6 +390,77 @@ class GroupPostCreateView(JSONResponseEnabledMixin):
             'result': True,
             'successMsg': force_text(SERVER_SUCCESS_MESSAGE)
         }, status=201)
+
+
+class GenericGroupPostCreateView(BaseGroupPostCreateView):
+    form_class = GenericGroupPostForm
+    template_name = 'social_network/group/post.html'
+    response_template_name = "social_network/group/detail/post.html"
+    success_status = 200
+    content_type = 'text/html'
+
+    def form_valid(self, form):
+        self.object = form.save()
+        feed_item = self.object.group.feed_items.filter(event__target_pk=self.object.pk).first()
+        return self.response_class(
+            request=self.request,
+            template=self.response_template_name,
+            status=self.success_status,
+            context={
+                'item': feed_item,
+                'user': self.request.user
+            },
+            **{'content_type': self.content_type}
+        )
+
+
+class GenericGroupPostUpdateView(UpdateView):
+    form_class = GenericGroupPostForm
+    model = GroupPost
+    template_name = "social_network/group/edit_post.html"
+    response_template_name = "social_network/group/detail/post.html"
+    success_status = 200
+    content_type = 'text/html'
+
+    def get_queryset(self):
+        return super(GenericGroupPostUpdateView, self).get_queryset().filter(group__slug=self.kwargs.get('slug'))
+
+    @atomic
+    def form_valid(self, form):
+        self.object = form.save()
+        feed_item = self.object.group.feed_items.filter(event__target_pk=self.object.pk).first()
+        return self.response_class(
+            request=self.request,
+            template=self.response_template_name,
+            status=self.success_status,
+            context={
+                'item': feed_item,
+                'user': self.request.user
+            },
+            **{'content_type': self.content_type}
+        )
+
+
+class GroupPostDeleteView(DeleteView):
+    model = GroupPost
+
+    def get_queryset(self):
+        return super(GroupPostDeleteView, self).get_queryset().filter(group__slug=self.kwargs.get('slug'))
+
+    @atomic
+    def delete(self, request, *args, **kwargs):
+        """
+        Calls the delete() method on the fetched object and then
+        redirects to the success URL.
+        """
+        self.object = self.get_object()
+        context = {
+            'successMsg': force_text(DELETE_GROUP_POST_SUCCESS_MESSAGE),
+            'result': True,
+            'pk': self.object.pk,
+        }
+        self.object.delete()
+        return HttpResponse(json.dumps(context), content_type='application/json')
 
 
 class BaseGroupCommentCreateView(BaseGroupPostCreateView):
@@ -454,3 +542,97 @@ class MembershipButtonsTemplateView(TemplateView):
         })
         return context
 
+
+class ShareView(FormView):
+    template_name = "content_interactions/share.html"
+    form_class = ShareSocialGroupForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.content_type = ContentType.objects.get(pk=self.kwargs.get('content_type_pk'))
+        self.object_pk = self.kwargs.get('object_pk')
+        return super(ShareView, self).dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super(ShareView, self).get_initial()
+        initial.update({
+            'content_type': self.content_type,
+            'object_pk': self.object_pk,
+            'creator': self.request.user,
+        })
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super(ShareView, self).get_context_data(**kwargs)
+        # adding content interaction share form to the context, if [false] coming from post method
+        if 'share_form' not in context:
+            from content_interactions.forms import ShareForm
+            context['share_form'] = self.get_form(
+                ShareForm,
+                **{
+                    'prefix': 'friend_share',
+                    'initial': {
+                        'content_type': self.content_type,
+                        'object_pk': self.object_pk,
+                        'user': self.request.user,
+                    }
+                }
+            )
+        # adding content interaction share social network form to the context, if [false] coming from post method
+        if 'share_social_network_form' not in context:
+            from social_publisher.provider import LABEL_TYPE_MESSAGE
+            from content_interactions.forms import ShareSocialNetworkForm
+            context['share_social_network_form'] = self.get_form(
+                ShareSocialNetworkForm,
+                **{
+                    'prefix': "social_network",
+                    'initial': {
+                        'content_type': self.content_type,
+                        'object_pk': self.object_pk,
+                        'user': self.request.user,
+                        'provider_type': LABEL_TYPE_MESSAGE
+                    }
+                }
+            )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from content_interactions.forms import ShareSocialNetworkForm, ShareForm
+
+        form = self.get_form(self.get_form_class())
+        share_form = self.get_form(
+            ShareForm, empty_permitted=True, prefix="friend_share"
+        )
+        share_social_network_form = self.get_form(
+            ShareSocialNetworkForm, empty_permitted=True, prefix="social_network"
+        )
+
+        forms_valid = True
+        forms_valid &= form.is_valid()
+        forms_valid &= share_form.is_valid()
+        forms_valid &= share_social_network_form.is_valid()
+
+        if forms_valid:
+            return self.forms_valid(form, share_form, share_social_network_form)
+        else:
+            return self.forms_invalid(form)
+
+    def forms_valid(self, form, share_form, share_social_network_form):
+        """
+        If the form is valid, share item.
+        """
+        # save and share to social groups
+        form.save()
+        # share to friends
+        share_form.share()
+        # share to social networks
+        share_social_network_form.share()
+        context = {
+            'successMsg': force_text(MODAL_SHARE_SUCCESS_MESSAGE),
+        }
+        return HttpResponse(json.dumps(context), content_type='application/json')
+
+    def forms_invalid(self, form):
+        context = {
+            'errorMsg': force_text(MODAL_VALIDATION_ERROR_MESSAGE)
+        }
+        return HttpResponseBadRequest(json.dumps(context), content_type='application/json')
